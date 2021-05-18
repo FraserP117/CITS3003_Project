@@ -41,10 +41,10 @@ class MessageWelcome():
 
   def __init__(self, idnum: int):
     self.idnum = idnum
-  
+
   def pack(self):
     return struct.pack('!HH', MessageType.WELCOME, self.idnum)
-  
+
   @classmethod
   def unpack(cls, bs: bytearray):
     messagelen = struct.calcsize('!HH')
@@ -52,11 +52,11 @@ class MessageWelcome():
     if len(bs) >= messagelen:
       _, idnum = struct.unpack_from('!HH', bs, 0)
       return cls(idnum), messagelen
-    
+
     return None, 0
-  
+
   def __str__(self):
-    return f"Welcome to the game! your ID is {self.idnum}."  
+    return f"Welcome to the game! your ID is {self.idnum}."
 
 class MessagePlayerJoined():
   """Sent by the server to all clients, when a new client joins.
@@ -66,12 +66,12 @@ class MessagePlayerJoined():
   def __init__(self, name: str, idnum: int):
     self.name = name
     self.idnum = idnum
-  
+
   def pack(self):
     return struct.pack('!HHH{}s'.format(len(self.name)),
       MessageType.PLAYER_JOINED, self.idnum,
       len(self.name), bytes(self.name, 'utf-8'))
-  
+
   @classmethod
   def unpack(cls, bs: bytearray):
     headerlen = struct.calcsize('!HHH')
@@ -81,21 +81,21 @@ class MessagePlayerJoined():
       if len(bs) >= headerlen + namelen:
         name, = struct.unpack_from('!{}s'.format(namelen), bs, headerlen)
         return MessagePlayerJoined(name, idnum), headerlen + namelen
-    
+
     return None, 0
-  
+
   def __str__(self):
-    return f"Player {self.name} has joined the game!"  
+    return f"Player {self.name} has joined the game!"
 
 class MessagePlayerLeft():
   """Sent by the server to all remaining clients, when a client leaves."""
 
   def __init__(self, idnum: int):
     self.idnum = idnum
-  
+
   def pack(self):
     return struct.pack('!HH', MessageType.PLAYER_LEFT, self.idnum)
-  
+
   @classmethod
   def unpack(cls, bs: bytearray):
     messagelen = struct.calcsize('!HH')
@@ -103,11 +103,11 @@ class MessagePlayerLeft():
     if len(bs) >= messagelen:
       _, idnum = struct.unpack_from('!HH', bs, 0)
       return cls(idnum), messagelen
-    
+
     return None, 0
-  
+
   def __str__(self):
-    return f"A player has left the game."  
+    return f"A player has left the game."
 
 class MessageCountdown():
   """Sent by the server to all clients, when the countdown for a new game has
@@ -132,10 +132,10 @@ class MessageAddTileToHand():
 
   def __init__(self, tileid):
     self.tileid = tileid
-  
+
   def pack(self):
     return struct.pack('!HH', MessageType.ADD_TILE_TO_HAND, self.tileid)
-  
+
   @classmethod
   def unpack(cls, bs: bytearray):
     messagelen = struct.calcsize('!HH')
@@ -143,9 +143,9 @@ class MessageAddTileToHand():
     if len(bs) >= messagelen:
       _, tileid = struct.unpack_from('!HH', bs, 0)
       return MessageAddTileToHand(tileid), messagelen
-    
+
     return None, 0
-  
+
   def __str__(self):
     return "Tiles are now added to your hand!"
 
@@ -156,10 +156,10 @@ class MessagePlayerTurn():
 
   def __init__(self, idnum: int):
     self.idnum = idnum
-  
+
   def pack(self):
     return struct.pack('!HH', MessageType.PLAYER_TURN, self.idnum)
-  
+
   @classmethod
   def unpack(cls, bs: bytearray):
     messagelen = struct.calcsize('!HH')
@@ -167,11 +167,11 @@ class MessagePlayerTurn():
     if len(bs) >= messagelen:
       _, idnum = struct.unpack_from('!HH', bs, 0)
       return cls(idnum), messagelen
-    
+
     return None, 0
-  
+
   def __str__(self):
-    return "A new turn has started!"  
+    return "A new turn has started!"
 
 class MessagePlaceTile():
   """Sent by the current player to the server to indicate that they want to
@@ -187,11 +187,11 @@ class MessagePlaceTile():
     self.rotation = rotation
     self.x = x
     self.y = y
-  
+
   def pack(self):
     return struct.pack('!HHHHHH', MessageType.PLACE_TILE, self.idnum,
       self.tileid, self.rotation, self.x, self.y)
-  
+
   @classmethod
   def unpack(cls, bs: bytearray):
     messagelen = struct.calcsize('!HHHHHH')
@@ -199,11 +199,11 @@ class MessagePlaceTile():
     if len(bs) >= messagelen:
       _, idnum, tileid, rotation, x, y = struct.unpack_from('!HHHHHH', bs, 0)
       return MessagePlaceTile(idnum, tileid, rotation, x, y), messagelen
-    
+
     return None, 0
-  
+
   def __str__(self):
-    return "A player placed his/her tile!"  
+    return "A player placed his/her tile!"
 
 class MessageMoveToken():
   """Sent by the current player to the server on turn 2, to indicate which
@@ -219,11 +219,11 @@ class MessageMoveToken():
     self.x = x
     self.y = y
     self.position = position
-  
+
   def pack(self):
     return struct.pack('!HHHHH', MessageType.MOVE_TOKEN, self.idnum,
       self.x, self.y, self.position)
-  
+
   @classmethod
   def unpack(cls, bs: bytearray):
     messagelen = struct.calcsize('!HHHHH')
@@ -231,11 +231,11 @@ class MessageMoveToken():
     if len(bs) >= messagelen:
       _, idnum, x, y, position = struct.unpack_from('!HHHHH', bs, 0)
       return cls(idnum, x, y, position), messagelen
-    
+
     return None, 0
-  
+
   def __str__(self):
-    return "Player has decided its starting position!"  
+    return "Player has decided its starting position!"
 
 class MessagePlayerEliminated():
   """Sent by the server to all clients when a player is eliminated from the
@@ -245,10 +245,10 @@ class MessagePlayerEliminated():
 
   def __init__(self, idnum: int):
     self.idnum = idnum
-  
+
   def pack(self):
     return struct.pack('!HH', MessageType.PLAYER_ELIMINATED, self.idnum)
-  
+
   @classmethod
   def unpack(cls, bs: bytearray):
     messagelen = struct.calcsize('!HH')
@@ -256,11 +256,11 @@ class MessagePlayerEliminated():
     if len(bs) >= messagelen:
       _, idnum = struct.unpack_from('!HH', bs, 0)
       return cls(idnum), messagelen
-    
+
     return None, 0
-  
+
   def __str__(self):
-    return "A player has been eliminated!"  
+    return "A player has been eliminated!"
 
 
 def read_message_from_bytearray(bs: bytearray):
@@ -280,31 +280,31 @@ def read_message_from_bytearray(bs: bytearray):
 
     if typeint == MessageType.WELCOME:
       msg, consumed = MessageWelcome.unpack(bs)
-    
+
     elif typeint == MessageType.PLAYER_JOINED:
       msg, consumed = MessagePlayerJoined.unpack(bs)
-    
+
     elif typeint == MessageType.PLAYER_LEFT:
       msg, consumed = MessagePlayerLeft.unpack(bs)
 
     elif typeint == MessageType.COUNTDOWN_STARTED:
       msg, consumed = MessageCountdown(), typesize
-    
+
     elif typeint == MessageType.GAME_START:
       msg, consumed = MessageGameStart(), typesize
-    
+
     elif typeint == MessageType.ADD_TILE_TO_HAND:
       msg, consumed = MessageAddTileToHand.unpack(bs)
-    
+
     elif typeint == MessageType.PLAYER_TURN:
       msg, consumed = MessagePlayerTurn.unpack(bs)
-    
+
     elif typeint == MessageType.PLACE_TILE:
       msg, consumed = MessagePlaceTile.unpack(bs)
-    
+
     elif typeint == MessageType.MOVE_TOKEN:
       msg, consumed = MessageMoveToken.unpack(bs)
-    
+
     elif typeint == MessageType.PLAYER_ELIMINATED:
       msg, consumed = MessagePlayerEliminated.unpack(bs)
   #print("MESSAGE@@@@@@@@@", msg, type(msg))
@@ -337,7 +337,7 @@ class Board:
       self.tileids[i] = None
       self.tilerotations[i] = None
       self.tileplaceids[i] = None
-    
+
     self.playerpositions = {}
 
   def get_tile(self, x: int, y: int):
@@ -346,11 +346,11 @@ class Board:
       raise Exception('invalid x value')
     if y < 0 or y >= self.height:
       raise Exception('invalid y value')
-    
+
     idx = self.tile_index(x, y)
 
     return self.tileids[idx], self.tilerotations[idx], self.tileplaceids[idx]
-  
+
   def set_tile(self, x: int, y: int, tileid: int, rotation: int, idnum: int):
     """Attempt to place the given tile at position x,y.
     rotation: the rotation of the tile.
@@ -367,12 +367,12 @@ class Board:
         return False
     elif x != 0 and x != self.width - 1 and y != 0 and y != self.height - 1:
       return False
-    
+
     idx = self.tile_index(x, y)
 
     if self.tileids[idx] != None:
       return False
-    
+
     self.tileids[idx] = tileid
     self.tilerotations[idx] = rotation
     self.tileplaceids[idx] = idnum
@@ -381,14 +381,14 @@ class Board:
   def have_player_position(self, idnum):
     """Check if the given player (by idnum) has a token on the board."""
     return idnum in self.playerpositions
-  
+
   def get_player_position(self, idnum):
     """The given player (idnum) must have a token on the board before calling
     this method.
-    
+
     Returns the player token's location as: x, y, position."""
     return self.playerpositions[idnum]
-  
+
   def set_player_start_position(self, idnum, x: int, y: int, position: int):
     """Attempt to set the starting position for a player token.
 
@@ -406,12 +406,12 @@ class Board:
     """
     if self.have_player_position(idnum):
       return False
-    
+
     # does the tile exist?
     idx = self.tile_index(x, y)
     if self.tileids[idx] == None:
       return False
-    
+
     # does the player own the tile?
     if self.tileplaceids[idx] != idnum:
       return False
@@ -429,7 +429,7 @@ class Board:
     self.update_player_position(idnum, x, y, position)
 
     return True
-  
+
   def do_player_movement(self, live_idnums):
     """For all of the player ids in the live_idnums list, this method will move
     their player tokens if it is possible for them to move.
@@ -479,18 +479,18 @@ class Board:
           position = exitposition
           eliminated.append(idnum)
           break
-        
+
         # otherwise move into that square and continue the loop (if a tile is in the square)
         x, y, position = nx, ny, dposition
         idx = self.tile_index(x, y)
-      
+
       if moved:
         self.update_player_position(idnum, x, y, position)
         positionupdates.append(MessageMoveToken(idnum, x, y, position))
-    
+
     return positionupdates, eliminated
 
-  # 
+  #
   # METHODS BELOW HERE ARE PRIVATE OR ONLY NEEDED BY THE CLIENT
   # -----------------------------------------------------------
 
@@ -499,7 +499,7 @@ class Board:
 
   def update_player_position(self, idnum, x: int, y: int, position: int):
     self.playerpositions[idnum] = (x, y, position)
-  
+
   def draw_squares(self, canvas, offset, onclick):
     for x in range(self.width):
       xpix = offset.x + x*self.tile_size_px
@@ -510,11 +510,11 @@ class Board:
           tid = canvas.create_rectangle(xpix, ypix,
             xpix+self.tile_size_px, ypix+self.tile_size_px, fill="#bbb", activefill="#fff",
             tags=('board_square', 'board_square_{}_{}'.format(x, y)))
-          
+
           self.tilerects[tidx] = tid
 
           canvas.tag_bind(tid, "<Button-1>", lambda ev, x=x, y=y: onclick(x, y))
-  
+
   def draw_tiles(self, canvas, offset):
     canvas.delete('board_tile')
 
@@ -529,16 +529,16 @@ class Board:
         if tileid != None:
           tile = ALL_TILES[tileid]
           rotation = self.tilerotations[idx]
-          
+
           tile.draw(canvas, self.tile_size_px, Point(xpix, ypix), rotation,
             tags=('board_tile', 'board_tile_{}_{}'.format(x, y)))
-          
+
           trect = self.tilerects[idx]
           if trect:
             canvas.itemconfigure(trect, fill="#bbb", activefill="#bbb")
-    
+
     canvas.lift('selection_token')
-  
+
   def draw_tokens(self, canvas, offset, playernums, eliminated):
     canvas.delete('token')
 
@@ -573,16 +573,16 @@ class Board:
     tokenid = canvas.create_oval(cx - 10, cy - 10, cx + 10, cy + 10,
       fill=playercol, activefill="#fff", outline='black',
       tags=('selection_token'))
-    
+
     canvas.tag_bind(tokenid, "<Button-1>", lambda ev: callback(connector))
-  
+
   def draw_selection_tokens(self, canvas, offset, playernums, x: int, y: int, callback):
     idx = self.tile_index(x, y)
     tileid = self.tileids[idx]
     if tileid == None:
       print('no tileid at selection token location {}, {}!'.format(x, y))
       return
-    
+
     playerid = self.tileplaceids[idx]
     playernum = playernums[playerid]
 
@@ -615,7 +615,7 @@ class Tile:
   def __init__(self, connections):
     if len(connections) != 4:
       raise RuntimeError("Tile must have exactly 8 connections")
-    
+
     self.nextpoint = [None] * 8
 
     for i in range(4):
@@ -630,15 +630,15 @@ class Tile:
         raise RuntimeError("Connection port {} set multiple times".format(b))
       self.nextpoint[a] = b
       self.nextpoint[b] = a
-    
+
     self.connections = connections
-  
+
   def getmovement(self, rotation, fromposition):
     unrotated = ((fromposition-2*rotation)+8)%8
     nextposition = self.nextpoint[unrotated]
     nextposition = (nextposition+2*rotation)%8
     return nextposition
-  
+
   def draw(self, canvas, size_px, basepoint, rotation, tags):
     for i in range(4):
       a, b = self.connections[i]

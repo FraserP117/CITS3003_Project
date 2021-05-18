@@ -27,8 +27,9 @@ class Server:
         sock.listen()
 
         while True:
-            # the diference here is that when a new connection is accepted, we create a new thread
-            # to allow for multiple client connections at once
+            # the diference here is that when a new connection is accepted,
+            # we create a new thread to allow for multiple client connections
+            # at once:
             connection, address = sock.accept()
             threading.Thread(
                 target = self.process_connection,

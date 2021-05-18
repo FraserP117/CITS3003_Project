@@ -33,8 +33,8 @@ def main():
         threads.append(thread)
 
     '''
-    If we want to wait for all a thread to complete its task;
-    calling thread.join() will acomplish this for any given thread.
+    If we want to wait for a thread to complete its task - prior to the exec
+    of the next thread; calling thread.join() will acomplish this.
     '''
     for thread in threads:
         thread.join()
