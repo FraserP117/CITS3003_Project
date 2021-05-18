@@ -1,6 +1,6 @@
 
 #include "Angel.h"
-// ModelView
+// texScale
 // Open Asset Importer header files (in ../../assimp--3.0.1270/include)
 // This is a standard open source library for loading meshes, see gnatidread.h
 #include <assimp/cimport.h>
@@ -16,10 +16,9 @@
 #include <filesystem>
 #define EXISTS std::filesystem::exists
 #endif
-// vTexCoord
+// texScale
 
 GLint windowHeight = 640, windowWidth = 960;
-
 // gnatidread.cpp is the CITS3003 "Graphics n Animation Tool Interface & Data
 // Reader" code.  This file contains parts of the code that you shouldn't need
 // to modify (but, you can).
@@ -73,6 +72,7 @@ typedef struct {
     int meshId;
     int texId;
     float texScale;
+    vec4 direction_vector; // aadded for part I
 } SceneObject;
 
 const int maxObjects = 1024; // Scenes with more than 1024 objects seem unlikely
@@ -361,6 +361,13 @@ void init(void) {
     sceneObjs[1].texId = 0; // Plain texture
     sceneObjs[1].brightness = 0.2; // The light's brightness is 5 times this (below).
 
+    // the second light:
+    addObject(55); // Sphere for the first light should this be 55 ????????????????????????????????????
+    sceneObjs[2].loc = vec4(-2.0, 1.0, 1.0, 1.0);
+    sceneObjs[2].scale = 0.2;
+    sceneObjs[2].texId = 0; // Plain texture
+    sceneObjs[2].brightness = 0.2; // The light's brightness is 5 times this (below).
+
     addObject(rand() % numMeshes); // A test mesh
 
     // We need to enable the depth test to discard fragments that
@@ -411,8 +418,6 @@ void drawMesh(SceneObject sceneObj) {
     // in the sceneObj structure (see near the top of the program).
 
     // B - here
-    // mat4 rotate = RotateX(sceneObj.angles[0]) * RotateY(sceneObj.angles[1]) * RotateZ(sceneObj.angles[2]);
-    // mat4 rotate = RotateZ(sceneObj.angles[2]) *  RotateY(sceneObj.angles[1]) * RotateX(sceneObj.angles[0]);
     mat4 rotate = RotateZ(sceneObj.angles[2]) *  RotateY(sceneObj.angles[1]) * RotateX(sceneObj.angles[0]);
     mat4 model = Translate(sceneObj.loc) * Scale(sceneObj.scale) * rotate;
     mat4 modelView_intermidiate = view * model;
@@ -420,6 +425,7 @@ void drawMesh(SceneObject sceneObj) {
     // Set the model-view matrix for the shaders
     // glUniformMatrix4fv(modelViewU, 1, GL_TRUE, view * model);
     glUniformMatrix4fv(modelViewU, 1, GL_TRUE, modelView_intermidiate);
+    // end of B
 
     // Activate the VAO for a mesh, loading if needed.
     loadMeshIfNotAlreadyLoaded(sceneObj.meshId);
@@ -437,32 +443,86 @@ void drawMesh(SceneObject sceneObj) {
 }
 
 //----------------------------------------------------------------------------
-
+// SpecularProduct
 void display(void) {
     numDisplayCalls++;
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     CheckError(); // May report a harmless GL_INVALID_OPERATION with GLEW on the first frame
 
+    // part A:
     // combine the rotations into a single rotation matrix: "rotate" and then apply "rotate" to the world frame:
     mat4 rotate = RotateY(camRotSidewaysDeg) * RotateX(camRotUpAndOverDeg);
     view = Translate(0.0, 0.0, -viewDist) * rotate;
 
-    SceneObject lightObj1 = sceneObjs[1];
-    vec4 lightPosition = view * lightObj1.loc;
+    vec4 worldOrigin = view * vec4(0.0, 0.0, 0.0, 1.0);
+
+
+    // // the first light:
+    // SceneObject lightObj1 = sceneObjs[1];
+    // vec4 lightPosition_1 = view * lightObj1.loc;
+    //
+    // glUniform4fv(glGetUniformLocation(shaderProgram, "LightPosition_1"),
+    //              1, lightPosition_1);
+    // CheckError();
+
+    // pass the homogeneous origin coordinates - in world space - to the shader:
+    glUniform4fv(glGetUniformLocation(shaderProgram, "worldOrigin"),
+                  1, worldOrigin);
+
+    CheckError();
+
+    // the first light:
+    SceneObject lightObj = sceneObjs[1];
+    vec4 lightPosition = view * lightObj.loc;
 
     glUniform4fv(glGetUniformLocation(shaderProgram, "LightPosition"),
                  1, lightPosition);
     CheckError();
+    glUniform3fv(glGetUniformLocation(shaderProgram, "LightColor"),
+                  1, lightObj.rgb);
+    CheckError();
+
+    glUniform1f(glGetUniformLocation(shaderProgram, "Brightness"),
+                  lightObj.brightness);
+    CheckError();
+
+    // the secondlight: PART I
+    SceneObject lightObj_2 = sceneObjs[2];
+    vec4 lightPosition_2 = view * lightObj_2.loc;
+
+    glUniform4fv(glGetUniformLocation(shaderProgram, "LightPosition_2"),
+                 1, lightPosition_2);
+    glUniform3fv(glGetUniformLocation(shaderProgram, "LightColor_2"),
+                  1, lightObj_2.rgb); CheckError();
+    CheckError();
+    glUniform1f(glGetUniformLocation(shaderProgram, "Brightness_2"),
+                  lightObj_2.brightness);
+    CheckError();
+
+    vec3 white = vec3(1.0, 1.0, 1.0);
 
     for (int i = 0; i < nObjects; i++) {
         SceneObject so = sceneObjs[i];
 
-        vec3 rgb = so.rgb * lightObj1.rgb * so.brightness * lightObj1.brightness * 2.0;
+        // vec3 rgb = so.rgb * lightObj.rgb * so.brightness * lightObj.brightness * 2.0;
+        vec3 rgb_1 = so.rgb * lightObj.rgb * so.brightness * lightObj.brightness * 2.0;
+        vec3 rgb_2 = so.rgb * lightObj_2.rgb * so.brightness * lightObj_2.brightness * 2.0;
+        // std::cout<<"\t\t lightObj.brightness \n";
+        // std::cout<<lightObj.brightness;
+        //
+        // std::cout<<"\t\t lightObj_2.brightness \n";
+        // std::cout<<lightObj_2.brightness;
+
+        vec3 rgb = rgb_1 + rgb_2;
+        // vec3 rgb = so.rgb * (lightObj.rgb + lightObj_2.rgb) * (so.brightness) * (lightObj.brightness + lightObj_2.brightness) * 2.0;
         glUniform3fv(glGetUniformLocation(shaderProgram, "AmbientProduct"), 1, so.ambient * rgb);
         CheckError();
         glUniform3fv(glGetUniformLocation(shaderProgram, "DiffuseProduct"), 1, so.diffuse * rgb);
-        glUniform3fv(glGetUniformLocation(shaderProgram, "SpecularProduct"), 1, so.specular * rgb);
+        // glUniform3fv(glGetUniformLocation(shaderProgram, "SpecularProduct"), 1, so.specular * rgb);
+        // we want the specular highlight to be white-ish: PART H
+        // glUniform3fv(glGetUniformLocation(shaderProgram, "SpecularProduct"), 1, so.specular * white); // modify the so.specular thing to be white too?
+        glUniform3fv(glGetUniformLocation(shaderProgram, "SpecularProduct"), 1, white); // modify the so.specular thing to be white too?
         glUniform1f(glGetUniformLocation(shaderProgram, "Shininess"), so.shine);
         CheckError();
 
@@ -496,8 +556,16 @@ static void groundMenu(int id) {
 }
 
 static void adjustBrightnessY(vec2 by) {
-    sceneObjs[toolObj].brightness += by[0];
-    sceneObjs[toolObj].loc[1] += by[1];
+    // sceneObjs[toolObj].brightness += by[0];
+    // sceneObjs[toolObj].loc[1] += by[1];
+
+    sceneObjs[1].brightness = 1;
+    sceneObjs[2].brightness = 2;
+
+
+    std::cout<<"\t\t START \t\t";
+    std::cout<<toolObj;
+    std::cout<<"\t\t END \t\t";
 }
 // ADDED: for part C
 /*
@@ -554,28 +622,104 @@ of the light source's position
 //     }
 // }
 
+// // Given the above description of the task, do we just modify the menue?
+// // or do we add a menue? I favour the former just now.
+// static void lightMenu(int id) {
+//     deactivateTool();
+//     if (id == 70) {
+//         toolObj = 1;
+//         setToolCallbacks(adjustLocXZ, camRotZ(),
+//                          adjustLocY, mat2(10.0, 0, 0, -10.0));
+//     } else if (id >= 71 && id <= 74) {
+//         toolObj = 1;
+//         setToolCallbacks(adjustRedGreen, mat2(1.0, 0, 0, 1.0),
+//                          adjustBlueBrightness, mat2(1.0, 0, 0, 1.0));
+//     }
+//     // added for the second light:
+//     else if (id == 80) { // Move Light 2
+//        toolObj = 2;
+//        setToolCallbacks(adjustLocXZ, camRotZ(),
+//                         adjustBrightnessY, mat2(1.0, 0.0, 0.0, 10.0));
+//     }
+//     else if (id >= 81 && id <= 84) { // R/G/B/ALL Light 2
+//         toolObj = 2;
+//         setToolCallbacks(adjustRedGreen, mat2(1.0, 0, 0, 1.0),
+//                          adjustBlueBrightness, mat2(1.0, 0, 0, 1.0));
+//     }
+//     else if (id == 90) {
+//         toolObj = 1;
+//         // Just for my own curiosity; not an answer to a question.
+//         setToolCallbacks(Identity, mat2(1.0, 0, 0, 1.0),
+//                          adjustBrightnessY, mat2(1.0, 0.0, 0.0, 10.0));
+//     }
+//     else if (id == 42) {
+//        toolObj = 2;
+//        // Just for my own curiosity; not an answer to a question.
+//        setToolCallbacks(Identity, mat2(1.0, 0, 0, 1.0),
+//                         adjustBrightnessY, mat2(1.0, 0.0, 0.0, 10.0));
+//     } else {
+//         printf("Error in lightMenu\n");
+//         exit(1);
+//     }
+// }
+
 // Given the above description of the task, do we just modify the menue?
 // or do we add a menue? I favour the former just now.
 static void lightMenu(int id) {
     deactivateTool();
-    if (id == 70) {
+    // std::cout<<id;
+    if (id == 70) { // move/adjust brigthness light 1
+        // std::cout<<"\t\t Move/brightness L1 \n";
         toolObj = 1;
         setToolCallbacks(adjustLocXZ, camRotZ(),
-                         adjustLocY, mat2(10.0, 0, 0, -10.0));
-    } else if (id >= 71 && id <= 74) {
+                        adjustBrightnessY, mat2(1.0, 0.0, 0.0, 10.0));
+      // std::cout<<Brightness;
+    } else if (id >= 71 && id <= 74) { // R/G/B/ALL Light 1
+        // std::cout<<"\t\t R/G, B L1\n";
         toolObj = 1;
-        setToolCallbacks(adjustRedGreen, mat2(1.0, 0, 0, 1.0),
-                         adjustBlueBrightness, mat2(1.0, 0, 0, 1.0));
-    } else if (id = 90) {
-        toolObj = 1;
-        // Just for my own curiosity; not an answer to a question.
-        setToolCallbacks(Identity, mat2(1.0, 0, 0, 1.0),
-                         adjustBrightnessY, mat2(1.0, 0.0, 0.0, 10.0));
-    } else {
+        // setToolCallbacks(adjustRedGreen, mat2(1.0, 0, 0, 1.0),
+        //                  adjustBlueBrightness, mat2(1.0, 0, 0, 1.0));
+        setToolCallbacks(adjustRedGreen, mat2(10.0, 0, 0, 10.0),
+                         adjustBlueBrightness, mat2(10.0, 0, 0, 10.0));
+    }
+    // added for the second light:
+    else if (id == 80) { // move/adjust brigthness light 2
+        // std::cout<<"\t\t Move/brightness L2 \n";
+       toolObj = 2;
+       // setToolCallbacks(adjustLocXZ, camRotZ(),
+       //                  adjustBrightnessY, mat2(1.0, 0.0, 0.0, 10.0));
+       setToolCallbacks(adjustLocXZ, camRotZ(),
+                        adjustBrightnessY, mat2(10.0, 0, 0, -10.0));
+      // std::cout<<Brightness_2;
+    }
+    // else if (id >= 81 && id <= 84) { // R/G/B/ALL Light 2
+    else if (id == 81) { // R/G/B/ALL Light 2
+        // std::cout<<"\t\t R/g, B L2 \n";
+        toolObj = 2;
+        // setToolCallbacks(adjustRedGreen, mat2(1.0, 0, 0, 1.0),
+        //                  adjustBlueBrightness, mat2(1.0, 0, 0, 1.0));
+        setToolCallbacks(adjustRedGreen, mat2(10.0, 0, 0, 10.0),
+                         adjustBlueBrightness, mat2(10.0, 0, 0, 10.0));
+    }
+    // else if (id == 90) {
+    //     toolObj = 1;
+    //     // Just for my own curiosity; not an answer to a question.
+    //     setToolCallbacks(Identity, mat2(1.0, 0, 0, 1.0),
+    //                      adjustBrightnessY, mat2(1.0, 0.0, 0.0, 10.0));
+    // }
+    // else if (id == 42) {
+    //    toolObj = 2;
+    //    // Just for my own curiosity; not an answer to a question.
+    //    setToolCallbacks(Identity, mat2(1.0, 0, 0, 1.0),
+    //                     adjustBrightnessY, mat2(1.0, 0.0, 0.0, 10.0));
+    // }
+    else {
         printf("Error in lightMenu\n");
         exit(1);
     }
 }
+
+
 
 
 static int createArrayMenu(int size, const char menuEntries[][128], void(*menuFn)(int)) {
@@ -616,7 +760,7 @@ static void materialMenu(int id) {
       toolObj = currObject;
       setToolCallbacks(
         adjustAmbientandDiffuse, mat2(10, 0, 0, 10),  // left mouse button
-        adjustSpecularityandShine, mat2(10, 0, 0, 10) // middle mouse button
+        adjustSpecularityandShine, mat2(100, 0, 0, 100) // middle mouse button
       );
     } // can't seem to adjust shine??????
 
@@ -665,9 +809,10 @@ static void makeMenu() {
 
     int lightMenuId = glutCreateMenu(lightMenu);
     glutAddMenuEntry("Move Light 1", 70);
-    glutAddMenuEntry("Adjust Brightness Light 1", 90); // ADDED for part C
+    // glutAddMenuEntry("Adjust Brightness Light 1", 90); // ADDED for part C
     glutAddMenuEntry("R/G/B/All Light 1", 71);
     glutAddMenuEntry("Move Light 2", 80);
+    // glutAddMenuEntry("Adjust Brightness Light 2", 42); // ADDED for part I
     glutAddMenuEntry("R/G/B/All Light 2", 81);
 
     glutCreateMenu(mainmenu);
